@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>프레임 이동 검증</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1b1f24;
+    --muted: #5f6b7a;
+    --line: #dde2e8;
+    --accent: #1f6feb;
+    --accent-text: #ffffff;
+    --ok: #1a7f37;
+    --bad: #cf222e;
+    --warn: #9a6700;
+    --chip: #eef1f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216;
+      --card: #171b21;
+      --text: #e6e9ee;
+      --muted: #9aa5b4;
+      --line: #2a313a;
+      --accent: #4a8cff;
+      --accent-text: #0b0d10;
+      --ok: #3fb950;
+      --bad: #ff6b6b;
+      --warn: #d29922;
+      --chip: #222830;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1216; --card: #171b21; --text: #e6e9ee; --muted: #9aa5b4; --line: #2a313a;
+    --accent: #4a8cff; --accent-text: #0b0d10; --ok: #3fb950; --bad: #ff6b6b; --warn: #d29922; --chip: #222830;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+  h2 { font-size: 1.1rem; margin: 0 0 12px; }
+  p { margin: 0 0 8px; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, .filebtn {
+    appearance: none; border: 1px solid var(--line); background: var(--chip); color: var(--text);
+    font: inherit; font-weight: 600; min-height: 48px; padding: 0 16px; border-radius: 10px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; touch-action: manipulation;
+  }
+  button.primary, .filebtn.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+  button:disabled { opacity: .45; cursor: default; }
+  .filebtn input { display: none; }
+  .steps button { min-width: 64px; font-size: 1.05rem; }
+  video { width: 100%; max-height: 60vh; background: #000; border-radius: 8px; display: block; }
+  input[type=range] { width: 100%; height: 40px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; width: 40%; }
+  .readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 12px 0; }
+  .readout div { background: var(--chip); border-radius: 8px; padding: 8px 10px; }
+  .readout b { display: block; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .readout span { color: var(--muted); font-size: .8rem; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  .verdict { font-size: 1.1rem; font-weight: 700; margin: 8px 0; }
+  progress { width: 100%; height: 12px; }
+  #pad { width: 100%; height: 180px; border: 2px dashed var(--line); border-radius: 10px; touch-action: none; display: block; background: var(--bg); }
+  textarea { width: 100%; min-height: 220px; font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  ol { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 4px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>0단계: 프레임 이동 검증</h1>
+  <p class="muted">이 기기의 브라우저에서 영상을 한 프레임씩 정확하게 넘길 수 있는지 확인하는 시험 페이지입니다. 영상은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다.</p>
+
+  <section>
+    <h2>검사 순서</h2>
+    <ol>
+      <li><b>테스트 영상 열기</b>로 먼저 검사합니다. 화면 속 FRAME 번호와 아래 프레임 번호가 같은지 보고 <b>자동 검사</b>를 누릅니다.</li>
+      <li>이 기기 카메라로 <b>계속 움직이는 장면</b>(손 흔들기, 공 던지기 등)을 5초쯤 찍습니다. 아이패드는 설정 &gt; 카메라 &gt; 비디오 녹화를 <b>1080p 60fps</b>로 맞춰 주세요.</li>
+      <li>찍은 영상을 <b>영상 고르기</b>로 열고 자동 검사를 누릅니다. 아이패드는 같은 영상을 <b>사진 보관함</b>에서 한 번, <b>파일 앱</b>에서 한 번 열어 해상도·파일 크기가 같은지 비교합니다.</li>
+      <li><b>바로 촬영하기</b>로 찍은 영상도 한 번 검사합니다.</li>
+      <li>맨 아래 <b>결과 복사</b>를 눌러 내용을 보내 주세요(또는 화면을 캡처해 주세요).</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>1. 영상 열기</h2>
+    <div class="row">
+      <button id="btnSample" class="primary">테스트 영상 열기</button>
+      <label class="filebtn">영상 고르기<input id="filePick" type="file" accept="video/*"></label>
+      <label class="filebtn">바로 촬영하기<input id="fileCapture" type="file" accept="video/*" capture="environment"></label>
+    </div>
+    <p id="loadMsg" class="muted" style="margin-top:8px"></p>
+  </section>
+
+  <section id="secInfo" class="hidden">
+    <h2>2. 영상 정보</h2>
+    <table id="infoTable"></table>
+  </section>
+
+  <section id="secViewer" class="hidden">
+    <h2>3. 한 프레임씩 넘기기</h2>
+    <video id="video" playsinline muted preload="auto"></video>
+    <div class="readout">
+      <div><span>프레임 번호</span><b id="roIndex">–</b></div>
+      <div><span>목표 시각 (파일 기준)</span><b id="roTarget">–</b></div>
+      <div><span>실제 표시된 프레임 시각</span><b id="roActual">–</b></div>
+      <div><span>일치 여부</span><b id="roMatch">–</b></div>
+      <div><span>이동에 걸린 시간</span><b id="roMs">–</b></div>
+    </div>
+    <div class="row steps">
+      <button data-step="-3">−3</button>
+      <button data-step="-1">−1</button>
+      <button data-step="1">+1</button>
+      <button data-step="3">+3</button>
+      <select id="strategy" style="min-height:48px;font:inherit;border-radius:10px;padding:0 8px;background:var(--chip);color:var(--text);border:1px solid var(--line)">
+        <option value="mid">이동 방식: 프레임 중간</option>
+        <option value="exact">이동 방식: 정확한 시각</option>
+        <option value="eps">이동 방식: 1 ms 뒤</option>
+      </select>
+    </div>
+    <input id="slider" type="range" min="0" max="0" value="0" step="1">
+    <p class="muted">테스트 영상이라면 화면 속 <b>FRAME 번호</b>가 위의 프레임 번호와 같아야 합니다. +1을 누를 때마다 빨간 막대가 한 칸씩 움직여야 합니다.</p>
+  </section>
+
+  <section id="secAuto" class="hidden">
+    <h2>4. 자동 검사</h2>
+    <p class="muted">무작위 위치로 수십 번 이동하면서 원하는 프레임이 정확히 나오는지 확인합니다. 20~60초 걸립니다. 검사 중에는 화면을 건드리지 마세요.</p>
+    <div class="row"><button id="btnAuto" class="primary">자동 검사 시작</button></div>
+    <progress id="autoProg" value="0" max="1" class="hidden" style="margin-top:12px"></progress>
+    <div id="autoResult"></div>
+  </section>
+
+  <section>
+    <h2>5. 기기와 브라우저</h2>
+    <table id="envTable"></table>
+  </section>
+
+  <section>
+    <h2>6. 애플펜슬·터치 확인</h2>
+    <p class="muted">아래 칸에 손가락과 펜으로 각각 찍어 보세요. 펜은 "pen"으로 표시되어야 합니다.</p>
+    <canvas id="pad"></canvas>
+    <p id="padInfo" class="muted" style="margin-top:8px">아직 입력 없음</p>
+  </section>
+
+  <section>
+    <h2>7. 결과</h2>
+    <div class="row" style="margin-bottom:8px">
+      <button id="btnCopy" class="primary">결과 복사</button>
+      <span id="copyMsg" class="muted"></span>
+    </div>
+    <textarea id="report" readonly></textarea>
+  </section>
+</main>
+
+<script src="mp4meta.js"></script>
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const video = $("video");
+const hasRVFC = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
+const state = {
+  file: null,
+  source: "",
+  info: null,
+  frames: [],
+  index: 0,
+  busy: false,
+  pending: null,
+  objectUrl: null,
+  runs: [],          // 영상별 자동 검사 결과
+  env: {},
+  pen: { types: new Set(), maxPressure: 0 },
+};
+
+// ---------- 기기 정보 ----------
+async function detectEnv() {
+  const env = {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform || "",
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    screen: `${screen.width}×${screen.height} @${window.devicePixelRatio}x`,
+    secureContext: window.isSecureContext,
+    rvfc: hasRVFC,
+    webcodecs: typeof window.VideoDecoder !== "undefined",
+    avcDecode: "확인 안 됨",
+    hevcDecode: "확인 안 됨",
+    indexedDB: "indexedDB" in window,
+  };
+  if (env.webcodecs) {
+    for (const [key, codec] of [["avcDecode", "avc1.640028"], ["hevcDecode", "hvc1.1.6.L123.B0"]]) {
+      try {
+        const r = await VideoDecoder.isConfigSupported({ codec });
+        env[key] = r.supported ? "가능" : "불가";
+      } catch (e) {
+        env[key] = "오류: " + e.message;
+      }
+    }
+  } else if (!env.secureContext) {
+    env.avcDecode = env.hevcDecode = "https가 아니라 확인 불가";
+  }
+  const can = (t) => { const v = document.createElement("video").canPlayType(t); return v || "no"; };
+  env.canPlayH264 = can('video/mp4; codecs="avc1.640028"');
+  env.canPlayHEVC = can('video/mp4; codecs="hvc1.1.6.L123.B0"');
+  state.env = env;
+
+  const rows = [
+    ["브라우저", env.userAgent],
+    ["터치 지점 수", env.maxTouchPoints],
+    ["화면", env.screen],
+    ["보안 연결(https)", yesno(env.secureContext)],
+    ["프레임 콜백(rVFC)", yesno(env.rvfc)],
+    ["WebCodecs", yesno(env.webcodecs)],
+    ["H.264 디코딩 (WebCodecs)", env.avcDecode],
+    ["HEVC 디코딩 (WebCodecs)", env.hevcDecode],
+    ["H.264 재생 (video)", env.canPlayH264],
+    ["HEVC 재생 (video)", env.canPlayHEVC],
+  ];
+  $("envTable").innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(String(v))}</td></tr>`).join("");
+  updateReport();
+}
+
+function yesno(b) { return b ? "예" : "아니오"; }
+function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function fmtT(t) { return t == null ? "–" : t.toFixed(4) + " s"; }
+function mb(n) { return (n / 1048576).toFixed(1) + " MB"; }
+
+// ---------- 영상 열기 ----------
+$("filePick").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openFile(f, "영상 고르기"); });
+$("fileCapture").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) openFile(f, "바로 촬영하기"); });
+$("btnSample").addEventListener("click", async () => {
+  $("loadMsg").textContent = "테스트 영상을 불러오는 중…";
+  try {
+    const res = await fetch("frame-counter-60fps.mp4");
+    const blob = await res.blob();
+    openFile(new File([blob], "frame-counter-60fps.mp4", { type: "video/mp4" }), "테스트 영상");
+  } catch (e) {
+    $("loadMsg").textContent = "테스트 영상을 불러오지 못했습니다: " + e.message;
+  }
+});
+
+async function openFile(file, source) {
+  state.file = file;
+  state.source = source;
+  state.info = null;
+  state.frames = [];
+  $("loadMsg").textContent = `${file.name} (${mb(file.size)}) 여는 중…`;
+  $("autoResult").innerHTML = "";
+
+  let parseError = null;
+  try {
+    state.info = await Mp4Meta.readFile(file);
+    state.frames = state.info.frames;
+  } catch (e) {
+    parseError = e.message;
+  }
+
+  if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+  state.objectUrl = URL.createObjectURL(file);
+  video.src = state.objectUrl;
+  lastMeta = null;
+  try {
+    await once(video, "loadedmetadata", 8000);
+  } catch (e) {
+    $("loadMsg").innerHTML = `<span class="bad">이 브라우저가 영상을 재생하지 못합니다.</span> ${esc(e.message)}`;
+    showInfo(file, parseError);
+    return;
+  }
+  // iOS는 한 번 재생해야 첫 프레임을 그리는 경우가 있다
+  try { await video.play(); } catch (_) {}
+  video.pause();
+
+  showInfo(file, parseError);
+  $("secInfo").classList.remove("hidden");
+  if (state.frames.length > 1) {
+    $("secViewer").classList.remove("hidden");
+    $("secAuto").classList.remove("hidden");
+    $("slider").max = state.frames.length - 1;
+    state.index = 0;
+    await goTo(0);
+    $("loadMsg").textContent = `${source}: ${file.name} 열림`;
+  } else {
+    $("secViewer").classList.add("hidden");
+    $("secAuto").classList.add("hidden");
+    $("loadMsg").innerHTML = `<span class="bad">프레임 시각표를 읽지 못했습니다.</span> ${esc(parseError || "")}`;
+  }
+  updateReport();
+}
+
+function showInfo(file, parseError) {
+  const i = state.info;
+  const rows = [
+    ["가져온 방법", state.source],
+    ["파일", `${file.name} · ${mb(file.size)} · ${file.type || "형식 정보 없음"}`],
+    ["브라우저가 본 크기", video.videoWidth ? `${video.videoWidth}×${video.videoHeight}, 길이 ${video.duration.toFixed(3)} s` : "–"],
+  ];
+  if (i) {
+    const bitrate = i.duration ? (file.size * 8 / i.duration / 1e6).toFixed(1) + " Mbps" : "–";
+    rows.push(
+      ["컨테이너", `${i.brand || "?"} (최상위: ${i.topLevelBoxes.join(" ")})`],
+      ["코덱", codecName(i.codec)],
+      ["원본 해상도", `${i.codedWidth}×${i.codedHeight}, 회전 ${i.rotation}°`],
+      ["프레임 수", `${i.frames.length} (샘플 ${i.sampleCount})`],
+      ["평균 프레임 속도", i.fps ? i.fps.toFixed(2) + " fps" : "–"],
+      ["프레임 간격", `평균 ${(i.deltaStats.mean * 1000).toFixed(2)} ms, 최소 ${(i.deltaStats.min * 1000).toFixed(2)}, 최대 ${(i.deltaStats.max * 1000).toFixed(2)}`],
+      ["가변 프레임 속도", i.vfr ? `<span class="warn">예 (불규칙 간격 ${i.deltaStats.irregular}개)</span>` : '<span class="ok">아니오</span>'],
+      ["B-프레임 / 편집 목록", `${yesno(i.hasCtts)} / ${i.editList.length ? i.editList.map((e) => `${e.mediaTime}@${e.segmentDuration}`).join(", ") : "없음"}`],
+      ["첫 프레임 시각", fmtT(i.frames[0])],
+      ["비트레이트", bitrate],
+      ["0.05 s 간격 프레임", Mp4Meta.pickByStep(i.frames, 0, 0.05, 12).map((k) => `${k}(${i.frames[k].toFixed(3)})`).join(" ")]
+    );
+    if (i.fps && Math.abs(i.fps - 60) > 2) rows.push(["주의", `<span class="warn">60fps가 아닙니다 (${i.fps.toFixed(1)} fps).</span>`]);
+  } else {
+    rows.push(["분석 오류", `<span class="bad">${esc(parseError || "알 수 없음")}</span>`]);
+  }
+  $("infoTable").innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("");
+}
+
+function codecName(c) {
+  const map = { avc1: "H.264 (avc1)", avc3: "H.264 (avc3)", hvc1: "HEVC (hvc1)", hev1: "HEVC (hev1)", vp09: "VP9", av01: "AV1", mp4v: "MPEG-4 Part 2" };
+  return map[c] || c || "?";
+}
+
+function once(el, ev, timeout) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => { el.removeEventListener(ev, ok); el.removeEventListener("error", bad); reject(new Error(ev + " 시간 초과")); }, timeout);
+    const ok = () => { clearTimeout(t); el.removeEventListener("error", bad); resolve(); };
+    const bad = () => { clearTimeout(t); el.removeEventListener(ev, ok); reject(new Error("재생 오류 " + (el.error ? el.error.code : ""))); };
+    el.addEventListener(ev, ok, { once: true });
+    el.addEventListener("error", bad, { once: true });
+  });
+}
+
+// ---------- 프레임 이동 ----------
+const STRATS = {
+  exact: (i) => state.frames[i],
+  mid: (i) => state.frames[i] + halfGap(i),
+  eps: (i) => state.frames[i] + 0.001,
+};
+
+function halfGap(i) {
+  const f = state.frames;
+  const next = i + 1 < f.length ? f[i + 1] : f[i] + (state.info.deltaStats.mean || 1 / 30);
+  return (next - f[i]) / 2;
+}
+
+function nearestIndex(t) {
+  const f = state.frames;
+  let lo = 0, hi = f.length - 1;
+  while (lo < hi) {
+    const m = (lo + hi) >> 1;
+    if (f[m] < t) lo = m + 1; else hi = m;
+  }
+  if (lo > 0 && Math.abs(f[lo - 1] - t) < Math.abs(f[lo] - t)) lo--;
+  return lo;
+}
+
+// 영상 시각을 바꾸고, 실제로 새 프레임이 그려질 때까지 기다린다
+let lastMeta = null;
+function seekVideo(t) {
+  return new Promise((resolve) => {
+    const t0 = performance.now();
+    let meta = null, seeked = false, done = false, rvfcId = null, grace = null;
+    const finish = (why) => {
+      if (done) return;
+      done = true;
+      clearTimeout(hard);
+      clearTimeout(grace);
+      video.removeEventListener("seeked", onSeeked);
+      if (rvfcId !== null && !meta) video.cancelVideoFrameCallback(rvfcId);
+      // 같은 프레임으로 이동하면 새 프레임이 그려지지 않아 콜백이 오지 않는다 → 직전 프레임 정보 사용
+      const same = !meta && seeked && lastMeta !== null;
+      if (meta) lastMeta = meta;
+      resolve({ meta: meta || (same ? lastMeta : null), sameFrame: same, seeked, why, ms: performance.now() - t0 });
+    };
+    if (hasRVFC) {
+      rvfcId = video.requestVideoFrameCallback((now, m) => { meta = m; if (seeked) finish("rvfc"); });
+    }
+    const onSeeked = () => {
+      seeked = true;
+      if (!hasRVFC || meta) finish("seeked");
+      else grace = setTimeout(() => finish("rvfc 없음"), 350);
+    };
+    video.addEventListener("seeked", onSeeked);
+    const hard = setTimeout(() => finish("시간 초과"), 4000);
+    video.currentTime = Math.max(0, t);
+  });
+}
+
+const hashCanvas = document.createElement("canvas");
+hashCanvas.width = 96; hashCanvas.height = 54;
+const hctx = hashCanvas.getContext("2d", { willReadFrequently: true });
+
+function frameHash() {
+  try {
+    hctx.drawImage(video, 0, 0, hashCanvas.width, hashCanvas.height);
+    const d = hctx.getImageData(0, 0, hashCanvas.width, hashCanvas.height).data;
+    let h = 0x811c9dc5;
+    for (let k = 0; k < d.length; k += 4) {
+      // 하위 비트 잡음에 흔들리지 않도록 상위 6비트만 사용
+      h ^= (d[k] >> 2) | ((d[k + 1] >> 2) << 6) | ((d[k + 2] >> 2) << 12);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h.toString(16);
+  } catch (e) {
+    return "err";
+  }
+}
+
+// 테스트 영상 전용: 빨간 막대 위치로 실제 그려진 프레임 번호(60으로 나눈 나머지)를 읽는다
+const barCanvas = document.createElement("canvas");
+barCanvas.width = 1280; barCanvas.height = 720;
+const bctx = barCanvas.getContext("2d", { willReadFrequently: true });
+function barFrame() {
+  try {
+    bctx.drawImage(video, 0, 0, 1280, 720);
+    const d = bctx.getImageData(0, 215, 1280, 1).data;
+    for (let x = 0; x < 1280; x++) {
+      const r = d[x * 4], g = d[x * 4 + 1], b = d[x * 4 + 2];
+      if (b > 150 && r < 90 && g < 90) return Math.round((x / 1280) * 60) % 60;
+    }
+  } catch (_) {}
+  return -1;
+}
+const isSample = () => state.source === "테스트 영상";
+
+async function goTo(i) {
+  const n = state.frames.length;
+  i = Math.max(0, Math.min(n - 1, i));
+  if (state.busy) { state.pending = i; return; }
+  state.busy = true;
+  state.index = i;
+  $("slider").value = i;
+  const strat = $("strategy").value;
+  const target = state.frames[i];
+  const r = await seekVideo(STRATS[strat](i));
+  $("roIndex").textContent = `${i} / ${n - 1}`;
+  $("roTarget").textContent = fmtT(target);
+  $("roMs").textContent = r.ms.toFixed(0) + " ms";
+  if (r.meta) {
+    const got = r.meta.mediaTime;
+    const k = nearestIndex(got);
+    $("roActual").textContent = fmtT(got);
+    $("roMatch").innerHTML = k === i ? '<span class="ok">✔ 일치</span>' : `<span class="bad">✘ ${k}번 프레임</span>`;
+  } else if (isSample()) {
+    const b = barFrame();
+    $("roActual").textContent = "콜백 없음";
+    $("roMatch").innerHTML = b === i % 60 ? '<span class="ok">✔ 일치 (막대)</span>' : `<span class="bad">✘ 막대 ${b}</span>`;
+  } else {
+    $("roActual").textContent = "콜백 없음";
+    $("roMatch").innerHTML = '<span class="warn">화면 번호로 확인</span>';
+  }
+  state.busy = false;
+  if (state.pending !== null) { const p = state.pending; state.pending = null; goTo(p); }
+}
+
+document.querySelectorAll("[data-step]").forEach((b) =>
+  b.addEventListener("click", () => goTo(state.index + Number(b.dataset.step)))
+);
+let sliderTimer = null;
+$("slider").addEventListener("input", (e) => {
+  clearTimeout(sliderTimer);
+  sliderTimer = setTimeout(() => goTo(Number(e.target.value)), 60);
+});
+$("strategy").addEventListener("change", () => goTo(state.index));
+document.addEventListener("keydown", (e) => {
+  if (!state.frames.length || e.target.tagName === "TEXTAREA") return;
+  if (e.key === "ArrowRight") { goTo(state.index + (e.shiftKey ? 3 : 1)); e.preventDefault(); }
+  if (e.key === "ArrowLeft") { goTo(state.index - (e.shiftKey ? 3 : 1)); e.preventDefault(); }
+});
+
+// ---------- 자동 검사 ----------
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function median(a) {
+  if (!a.length) return null;
+  const s = [...a].sort((x, y) => x - y);
+  return s[Math.floor(s.length / 2)];
+}
+
+$("btnAuto").addEventListener("click", runAuto);
+
+async function runAuto() {
+  const n = state.frames.length;
+  if (n < 12) return;
+  const btns = document.querySelectorAll("button, select, input");
+  btns.forEach((b) => (b.disabled = true));
+  const prog = $("autoProg");
+  prog.classList.remove("hidden");
+
+  const sampleCount = Math.min(30, n - 2);
+  const pool = [];
+  for (let i = 1; i < n - 1; i++) pool.push(i);
+  const order = shuffle(pool).slice(0, sampleCount);
+  const seqStart = Math.max(1, Math.floor(n / 4));
+  const seqLen = Math.min(30, n - seqStart - 1);
+  const step3Len = Math.min(15, Math.floor((n - seqStart - 1) / 3));
+  const total = order.length * 3 + seqLen + step3Len;
+  let done = 0;
+  const tick = () => { prog.value = ++done / total; };
+
+  const byStrat = {};
+  const hashes = {}; // idx → {strat: hash}
+  for (const s of ["exact", "mid", "eps"]) {
+    const rec = [];
+    for (const idx of order) {
+      const r = await seekVideo(STRATS[s](idx));
+      const h = frameHash();
+      (hashes[idx] = hashes[idx] || {})[s] = h;
+      const bar = isSample() ? barFrame() === idx % 60 : null;
+      rec.push({ idx, got: r.meta ? r.meta.mediaTime : null, ms: r.ms, why: r.why, bar });
+      tick();
+    }
+    byStrat[s] = rec;
+  }
+
+  // 오프셋: 브라우저 시각 − 파일 시각 (프레임 중간 방식 기준)
+  const offs = byStrat.mid.filter((r) => r.got != null).map((r) => r.got - state.frames[r.idx]);
+  const offset = median(offs);
+
+  const summarize = (rec) => {
+    const withMeta = rec.filter((r) => r.got != null);
+    const raw = withMeta.filter((r) => nearestIndex(r.got) === r.idx).length;
+    const corrected = offset == null ? 0 : withMeta.filter((r) => nearestIndex(r.got - offset) === r.idx).length;
+    const bar = isSample() ? rec.filter((r) => r.bar).length : null;
+    return { n: rec.length, meta: withMeta.length, raw, corrected, bar, ms: rec.reduce((a, r) => a + r.ms, 0) / rec.length };
+  };
+  const res = { exact: summarize(byStrat.exact), mid: summarize(byStrat.mid), eps: summarize(byStrat.eps) };
+
+  // 같은 프레임을 세 방식으로 갔을 때 그림이 같은가
+  let agreeAll = 0, agreeMidExact = 0;
+  for (const idx of order) {
+    const h = hashes[idx];
+    if (h.exact === h.mid && h.mid === h.eps) agreeAll++;
+    if (h.exact === h.mid) agreeMidExact++;
+  }
+
+  // 연속 +1 넘기기: 같은 그림이 연달아 나오면 이동 실패 의심
+  const seq = [];
+  for (let k = 0; k < seqLen; k++) {
+    const idx = seqStart + k;
+    const r = await seekVideo(STRATS.mid(idx));
+    seq.push({ idx, h: frameHash(), got: r.meta ? r.meta.mediaTime : null, bar: isSample() ? barFrame() === idx % 60 : null });
+    tick();
+  }
+  let dupes = 0, seqMatch = 0, seqMeta = 0;
+  const seqBar = isSample() ? seq.filter((x) => x.bar).length : null;
+  for (let k = 0; k < seq.length; k++) {
+    if (k > 0 && seq[k].h === seq[k - 1].h) dupes++;
+    if (seq[k].got != null) { seqMeta++; if (nearestIndex(seq[k].got - (offset || 0)) === seq[k].idx) seqMatch++; }
+  }
+
+  // +3 넘기기
+  let s3Match = 0, s3Meta = 0, s3Bar = isSample() ? 0 : null;
+  for (let k = 0; k < step3Len; k++) {
+    const idx = seqStart + 3 * k;
+    const r = await seekVideo(STRATS.mid(idx));
+    if (r.meta) { s3Meta++; if (nearestIndex(r.meta.mediaTime - (offset || 0)) === idx) s3Match++; }
+    if (s3Bar !== null && barFrame() === idx % 60) s3Bar++;
+    tick();
+  }
+
+  const run = {
+    source: state.source,
+    file: `${state.file.name} ${mb(state.file.size)}`,
+    codec: state.info.codec,
+    res: `${state.info.codedWidth}×${state.info.codedHeight} r${state.info.rotation}`,
+    fps: state.info.fps,
+    vfr: state.info.vfr,
+    frames: n,
+    strategies: res,
+    offset,
+    hashAgree: `${agreeAll}/${order.length} (중간=정확 ${agreeMidExact}/${order.length})`,
+    sample: isSample(),
+    seq: { len: seq.length, dupes, match: seqMatch, meta: seqMeta, bar: seqBar },
+    step3: { len: step3Len, match: s3Match, meta: s3Meta, bar: s3Bar },
+  };
+  run.verdict = verdict(run);
+  state.runs.push(run);
+  renderAuto(run);
+
+  prog.classList.add("hidden");
+  btns.forEach((b) => (b.disabled = false));
+  await goTo(state.index);
+  updateReport();
+}
+
+function verdict(run) {
+  const S = run.strategies;
+  const noMeta = Object.values(S).every((r) => r.meta === 0);
+  if (noMeta && run.sample) {
+    const best = Object.entries(S).sort((a, b) => b[1].bar - a[1].bar || a[1].ms - b[1].ms)[0];
+    const [name, r] = best;
+    const rate = r.bar / r.n;
+    const seqOk = run.seq.bar === run.seq.len && run.step3.bar === run.step3.len;
+    const others = Object.entries(S).map(([k, v]) => `${label(k)} ${v.bar}/${v.n}`).join(", ");
+    if (rate >= 0.97 && seqOk) return { level: "ok", best: name, text: `프레임 단위 이동 가능 (빨간 막대로 확인, 권장 방식: ${label(name)}). ${others}` };
+    return { level: rate >= 0.85 ? "warn" : "bad", best: name, text: `빨간 막대 기준 정확도가 부족합니다. ${others}, 연속 넘기기 ${run.seq.bar}/${run.seq.len}` };
+  }
+  const best = Object.entries(S).sort((a, b) => b[1].corrected - a[1].corrected || a[1].ms - b[1].ms)[0];
+  const [name, r] = best;
+  if (r.meta === 0) {
+    const ok = run.seq.dupes === 0;
+    return { level: ok ? "warn" : "bad", best: "mid", text: ok
+      ? "프레임 콜백이 없어 자동 판정은 못 했지만, 연속 넘기기에서 같은 그림이 반복되지 않았습니다. 화면 번호로 한 번 더 확인해 주세요."
+      : `연속 넘기기에서 같은 그림이 ${run.seq.dupes}번 반복되었습니다. 프레임 이동이 정확하지 않을 수 있습니다.` };
+  }
+  const rate = r.corrected / r.meta;
+  const offFrames = run.offset && run.fps ? run.offset * run.fps : 0;
+  const offNote = Math.abs(offFrames) >= 0.5 ? ` 단, 브라우저 시각이 파일 시각보다 ${(run.offset * 1000).toFixed(1)} ms 어긋나 있어 보정이 필요합니다.` : "";
+  if (rate >= 0.97 && run.seq.dupes === 0) {
+    return { level: "ok", best: name, text: `프레임 단위 이동 가능 (권장 방식: ${label(name)}, 일치율 ${(rate * 100).toFixed(0)}%).${offNote}` };
+  }
+  if (rate >= 0.85) {
+    return { level: "warn", best: name, text: `대체로 가능하지만 가끔 어긋납니다 (최고 일치율 ${(rate * 100).toFixed(0)}%, 중복 ${run.seq.dupes}번). 직접 디코딩 방식 검토 필요.${offNote}` };
+  }
+  return { level: "bad", best: name, text: `프레임 이동이 정확하지 않습니다 (최고 일치율 ${(rate * 100).toFixed(0)}%). 직접 디코딩(WebCodecs) 방식이 필요합니다.` };
+}
+
+function label(s) { return { exact: "정확한 시각", mid: "프레임 중간", eps: "1 ms 뒤" }[s]; }
+
+function renderAuto(run) {
+  const S = run.strategies;
+  const row = (s) => {
+    const r = S[s];
+    const bar = r.bar != null ? ` · 빨간 막대 ${r.bar}/${r.n}` : "";
+    return `<tr><th>${label(s)}</th><td>${r.meta ? `${r.raw}/${r.meta} 일치 (보정 후 ${r.corrected}/${r.meta})` : "콜백 없음"}${bar} · 평균 ${r.ms.toFixed(0)} ms</td></tr>`;
+  };
+  $("autoResult").innerHTML = `
+    <p class="verdict ${run.verdict.level}">${esc(run.verdict.text)}</p>
+    <table>
+      ${row("exact")}${row("mid")}${row("eps")}
+      <tr><th>브라우저−파일 시각 차</th><td>${run.offset == null ? "–" : (run.offset * 1000).toFixed(2) + " ms"}</td></tr>
+      <tr><th>세 방식 그림 일치</th><td>${run.hashAgree}</td></tr>
+      <tr><th>연속 +1 넘기기</th><td>중복 ${run.seq.dupes}번 · 일치 ${run.seq.match}/${run.seq.meta}${run.seq.bar != null ? ` · 빨간 막대 ${run.seq.bar}/${run.seq.len}` : ""}</td></tr>
+      <tr><th>+3 넘기기</th><td>일치 ${run.step3.match}/${run.step3.meta}${run.step3.bar != null ? ` · 빨간 막대 ${run.step3.bar}/${run.step3.len}` : ""}</td></tr>
+    </table>`;
+}
+
+// ---------- 펜 확인 ----------
+const pad = $("pad");
+const pctx = pad.getContext("2d");
+function sizePad() {
+  const r = pad.getBoundingClientRect();
+  pad.width = r.width * devicePixelRatio;
+  pad.height = r.height * devicePixelRatio;
+}
+sizePad();
+window.addEventListener("resize", sizePad);
+pad.addEventListener("pointerdown", (e) => { pad.setPointerCapture(e.pointerId); drawPoint(e); });
+pad.addEventListener("pointermove", (e) => { if (e.buttons || e.pressure > 0) drawPoint(e); });
+function drawPoint(e) {
+  const r = pad.getBoundingClientRect();
+  const x = (e.clientX - r.left) * devicePixelRatio, y = (e.clientY - r.top) * devicePixelRatio;
+  pctx.fillStyle = e.pointerType === "pen" ? "#1f6feb" : e.pointerType === "touch" ? "#d4a72c" : "#8a8a8a";
+  pctx.beginPath();
+  pctx.arc(x, y, (e.pointerType === "pen" ? 2 : 5) * devicePixelRatio, 0, Math.PI * 2);
+  pctx.fill();
+  state.pen.types.add(e.pointerType);
+  state.pen.maxPressure = Math.max(state.pen.maxPressure, e.pressure || 0);
+  $("padInfo").textContent = `입력: ${e.pointerType} · 압력 ${(e.pressure || 0).toFixed(2)} · 기울기 ${e.tiltX || 0}/${e.tiltY || 0} · 접촉 크기 ${Math.round(e.width)}×${Math.round(e.height)}`;
+  updateReport();
+}
+
+// ---------- 결과 ----------
+function updateReport() {
+  const e = state.env;
+  const lines = [
+    "[0단계 검증 결과]",
+    `시각: ${new Date().toLocaleString("ko-KR")}`,
+    `브라우저: ${e.userAgent || ""}`,
+    `터치 ${e.maxTouchPoints} · 화면 ${e.screen} · https ${yesno(e.secureContext)}`,
+    `rVFC ${yesno(e.rvfc)} · WebCodecs ${yesno(e.webcodecs)} (H.264 ${e.avcDecode}, HEVC ${e.hevcDecode})`,
+    `video 재생: H.264 ${e.canPlayH264}, HEVC ${e.canPlayHEVC}`,
+    `펜 입력: ${[...state.pen.types].join(", ") || "확인 안 함"} · 최대 압력 ${state.pen.maxPressure.toFixed(2)}`,
+  ];
+  if (state.info) {
+    const i = state.info;
+    lines.push(
+      "",
+      `[현재 영상] ${state.source} · ${state.file.name} · ${mb(state.file.size)}`,
+      `${codecName(i.codec)} · ${i.codedWidth}×${i.codedHeight} · 회전 ${i.rotation}° · ${i.fps ? i.fps.toFixed(2) : "?"} fps · VFR ${yesno(i.vfr)} · 프레임 ${i.frames.length}`,
+      `컨테이너 ${i.brand} [${i.topLevelBoxes.join(" ")}] · B-프레임 ${yesno(i.hasCtts)} · 편집 목록 ${i.editList.length}개 · 첫 프레임 ${i.frames[0].toFixed(4)} s`,
+      `브라우저 크기 ${video.videoWidth}×${video.videoHeight}`
+    );
+  }
+  state.runs.forEach((r, k) => {
+    const S = r.strategies;
+    const f = (s) => `${S[s].corrected}/${S[s].meta}${S[s].bar != null ? " 막대" + S[s].bar + "/" + S[s].n : ""}(${S[s].ms.toFixed(0)}ms)`;
+    lines.push(
+      "",
+      `[자동 검사 ${k + 1}] ${r.source} · ${r.file} · ${r.codec} ${r.res} · ${r.fps ? r.fps.toFixed(1) : "?"}fps · VFR ${yesno(r.vfr)}`,
+      `판정: ${r.verdict.text}`,
+      `정확 ${f("exact")} · 중간 ${f("mid")} · 1ms ${f("eps")} · 시각차 ${r.offset == null ? "–" : (r.offset * 1000).toFixed(2) + "ms"}`,
+      `그림 일치 ${r.hashAgree} · +1 중복 ${r.seq.dupes} 일치 ${r.seq.match}/${r.seq.meta}${r.seq.bar != null ? " 막대 " + r.seq.bar + "/" + r.seq.len : ""} · +3 일치 ${r.step3.match}/${r.step3.meta}${r.step3.bar != null ? " 막대 " + r.step3.bar + "/" + r.step3.len : ""}`
+    );
+  });
+  $("report").value = lines.join("\n");
+}
+
+$("btnCopy").addEventListener("click", async () => {
+  updateReport();
+  const text = $("report").value;
+  try {
+    if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
+    else { $("report").select(); document.execCommand("copy"); }
+    $("copyMsg").textContent = "복사했습니다.";
+  } catch (e) {
+    $("report").select();
+    $("copyMsg").textContent = "자동 복사가 안 됩니다. 글자를 길게 눌러 직접 복사해 주세요.";
+  }
+});
+
+detectEnv();
+</script>
+</body>
+</html>
