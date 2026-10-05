@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기준판 인쇄</title>
+<style>
+  :root { --bg: #f4f6f8; --text: #1b1f24; --muted: #5f6b7a; --accent: #1f6feb; --accent-text: #fff; --card: #fff; --line: #dde2e8; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #0f1216; --text: #e6e9ee; --muted: #9aa5b4; --accent: #4a8cff; --accent-text: #0b0d10; --card: #171b21; --line: #2a313a; }
+  }
+  :root[data-theme="dark"] { --bg: #0f1216; --text: #e6e9ee; --muted: #9aa5b4; --accent: #4a8cff; --accent-text: #0b0d10; --card: #171b21; --line: #2a313a; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; }
+  .guide { max-width: 760px; margin: 0 auto; padding: 20px 16px; }
+  .guide h1 { font-size: 1.3rem; margin: 0 0 8px; }
+  .guide ol { padding-left: 20px; }
+  .guide li { margin-bottom: 6px; }
+  .guide button { font: inherit; font-weight: 600; min-height: 48px; padding: 0 20px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-text); cursor: pointer; }
+  .preview { max-width: 760px; margin: 0 auto 32px; padding: 0 16px; }
+  .preview svg { width: 100%; height: auto; background: #fff; border: 1px solid var(--line); border-radius: 6px; display: block; }
+  @page { size: A4 landscape; margin: 0; }
+  @media print {
+    body { background: #fff; }
+    .guide { display: none; }
+    .preview { max-width: none; margin: 0; padding: 0; }
+    .preview svg { width: 296mm; height: 209mm; border: 0; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="guide">
+    <h1>기준판 인쇄</h1>
+    <ol>
+      <li>A4 용지에 인쇄합니다. 인쇄 설정에서 <b>용지 방향: 가로</b>, <b>배율: 실제 크기(100%)</b>를 고르세요. "용지에 맞춤"으로 인쇄하면 길이가 줄어 측정이 틀어집니다.</li>
+      <li>인쇄한 뒤 30 cm 자로 <b>과녁 ① 중심 ~ ② 중심이 25.0 cm</b>인지 한 번 확인하세요.</li>
+      <li>촬영할 때: 촬영을 시작하고, 한 학생이 <b>공이 날아갈 선 위에서</b> 기준판을 카메라를 향해 반듯하게 2초 들고 있다가 빠집니다. 그다음 카메라를 움직이지 말고 공을 던집니다.</li>
+    </ol>
+    <button onclick="window.print()">인쇄하기</button>
+  </div>
+  <div class="preview">
+    <!-- 1 단위 = 1 mm. 용지 296 × 209 mm (A4보다 1 mm 작게 해 두 쪽으로 넘어가지 않게 함) -->
+    <svg viewBox="0 0 296 209" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif">
+      <defs>
+        <g id="target">
+          <circle r="11" fill="#000"/>
+          <circle r="7.5" fill="#fff"/>
+          <circle r="4" fill="#000"/>
+          <circle r="1" fill="#fff"/>
+          <line x1="-15" y1="0" x2="-11.5" y2="0" stroke="#000" stroke-width=".6"/>
+          <line x1="11.5" y1="0" x2="15" y2="0" stroke="#000" stroke-width=".6"/>
+          <line x1="0" y1="-15" x2="0" y2="-11.5" stroke="#000" stroke-width=".6"/>
+          <line x1="0" y1="11.5" x2="0" y2="15" stroke="#000" stroke-width=".6"/>
+        </g>
+      </defs>
+      <!-- 과녁 중심: ① (23.5, 179) ② (273.5, 179) ③ (23.5, 29) → ①② 250 mm, ①③ 150 mm -->
+      <use href="#target" x="23.5" y="179"/>
+      <use href="#target" x="273.5" y="179"/>
+      <use href="#target" x="23.5" y="29"/>
+      <text x="40" y="172" font-size="16" font-weight="800">①</text>
+      <text x="246" y="172" font-size="16" font-weight="800">②</text>
+      <text x="40" y="36" font-size="16" font-weight="800">③</text>
+      <!-- 거리 표시 -->
+      <line x1="40" y1="194" x2="257" y2="194" stroke="#888" stroke-width=".5" stroke-dasharray="2 2"/>
+      <text x="148" y="200" font-size="6" text-anchor="middle" fill="#555">① ↔ ② 25.0 cm</text>
+      <line x1="10" y1="44" x2="10" y2="164" stroke="#888" stroke-width=".5" stroke-dasharray="2 2"/>
+      <text x="8" y="104" font-size="6" text-anchor="middle" fill="#555" transform="rotate(-90 8 104)">① ↔ ③ 15.0 cm</text>
+      <text x="148" y="100" font-size="9" text-anchor="middle" fill="#444" font-weight="700">포물선 운동 분석 기준판</text>
+      <text x="148" y="112" font-size="5.5" text-anchor="middle" fill="#666">실제 크기(100%)로 인쇄 · 과녁을 ① → ② → ③ 순서로 찍으세요</text>
+    </svg>
+  </div>
+</body>
+</html>

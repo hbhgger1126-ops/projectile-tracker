@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
-await import(pathToFileURL(join(here, "..", "phase0", "mp4meta.js")).href);
+await import(pathToFileURL(join(here, "..", "lib", "mp4meta.js")).href);
 const { Mp4Meta } = globalThis;
 
 const u32 = (n) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];

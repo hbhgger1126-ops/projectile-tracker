@@ -2,22 +2,231 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
 <title>포물선 운동 분석</title>
 <style>
-  :root { --bg: #f6f7f9; --text: #1b1f24; --muted: #5f6b7a; --accent: #1f6feb; --accent-text: #fff; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #0f1216; --text: #e6e9ee; --muted: #9aa5b4; --accent: #4a8cff; --accent-text: #0b0d10; } }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
-  main { max-width: 640px; margin: 0 auto; padding: 32px 16px; }
-  a.btn { display: inline-block; margin-top: 12px; padding: 14px 20px; border-radius: 10px; background: var(--accent); color: var(--accent-text); text-decoration: none; font-weight: 600; }
-  p { color: var(--muted); }
+  :root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --text: #1b1f24;
+    --muted: #5f6b7a;
+    --line: #dde2e8;
+    --chip: #eef1f5;
+    --accent: #1f6feb;
+    --accent-text: #ffffff;
+    --ok: #1a7f37;
+    --warn: #9a6700;
+    --warn-bg: #fff8e1;
+    --bad: #cf222e;
+    --row-a: #e3f0ff;
+    --row-b: #fff1d6;
+    --row-c: #e6f6ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216; --card: #171b21; --text: #e6e9ee; --muted: #9aa5b4; --line: #2a313a; --chip: #222830;
+      --accent: #4a8cff; --accent-text: #0b0d10; --ok: #3fb950; --warn: #d29922; --warn-bg: #2b2412; --bad: #ff6b6b;
+      --row-a: #15263d; --row-b: #33270f; --row-c: #142a1b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1216; --card: #171b21; --text: #e6e9ee; --muted: #9aa5b4; --line: #2a313a; --chip: #222830;
+    --accent: #4a8cff; --accent-text: #0b0d10; --ok: #3fb950; --warn: #d29922; --warn-bg: #2b2412; --bad: #ff6b6b;
+    --row-a: #15263d; --row-b: #33270f; --row-c: #142a1b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 40px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.25rem; margin: 4px 0; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  .hidden { display: none !important; }
+
+  /* 단계 표시 */
+  .stepper { display: flex; gap: 6px; margin: 10px 0 12px; flex-wrap: wrap; }
+  .stepper button {
+    flex: 1 1 0; min-width: 0; min-height: 44px; padding: 4px 8px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--card); color: var(--muted); font: inherit; font-size: .9rem; font-weight: 600;
+  }
+  .stepper button.done { color: var(--ok); }
+  .stepper button.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+  .stepper button:disabled { opacity: .5; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .instr { font-size: 1.05rem; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: .92rem; margin: 0; }
+
+  button, .filebtn {
+    appearance: none; font: inherit; font-weight: 600; min-height: 48px; padding: 0 16px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--chip); color: var(--text); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+  }
+  button.primary, .filebtn.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+  button:disabled { opacity: .4; cursor: default; }
+  .filebtn input { display: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .spacer { flex: 1; }
+
+  /* 영상 선택 */
+  .load-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 12px; }
+  .load-grid .filebtn, .load-grid button { min-height: 72px; font-size: 1.05rem; }
+  .checklist { margin: 16px 0 0; padding-left: 20px; color: var(--muted); }
+  .checklist li { margin-bottom: 4px; }
+
+  .banner { border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; background: var(--warn-bg); color: var(--text); border: 1px solid var(--line); }
+  .banner b { color: var(--warn); }
+  .banner.bad b { color: var(--bad); }
+
+  /* 작업 화면 */
+  .work-head { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 10px; }
+  .work-head .text { flex: 1 1 280px; }
+  .stage-wrap { display: flex; justify-content: center; }
+  .stage {
+    position: relative; width: min(100%, calc(64vh * var(--ar, 1.778))); aspect-ratio: var(--ar, 1.778);
+    background: #000; border-radius: 8px; overflow: hidden;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stage video { object-fit: contain; }
+  #overlay { touch-action: none; cursor: crosshair; }
+  .status { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 10px 0 6px; font-variant-numeric: tabular-nums; }
+  .status .pill { background: var(--chip); border-radius: 999px; padding: 4px 12px; font-size: .92rem; }
+  .status .pill.warn { color: var(--warn); }
+  .nav button { min-width: 60px; font-size: 1.05rem; }
+  input[type=range] { width: 100%; height: 40px; margin: 4px 0 0; }
+
+  #loupe {
+    position: fixed; width: 150px; height: 150px; border-radius: 50%; pointer-events: none; z-index: 20;
+    border: 3px solid var(--accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); background: #000;
+  }
+
+  /* 데이터 표 */
+  .table-wrap { overflow-x: auto; }
+  table.data { width: 100%; max-width: 560px; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+  table.data th, table.data td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; }
+  table.data th { color: var(--muted); font-weight: 600; font-size: .9rem; }
+  table.data tr.pt { cursor: pointer; }
+  table.data tr.A { background: var(--row-a); }
+  table.data tr.B { background: var(--row-b); }
+  table.data tr.C { background: var(--row-c); }
+  .tag { display: inline-block; min-width: 26px; padding: 0 6px; border-radius: 6px; font-weight: 700; font-size: .85rem; }
+  .tag.A { background: var(--accent); color: var(--accent-text); }
+  .tag.B { background: var(--warn); color: #fff; }
+  .tag.C { background: var(--ok); color: #fff; }
+  .legend { display: grid; gap: 6px; margin: 12px 0; }
+  .table-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) { .table-layout { grid-template-columns: minmax(0, 560px) minmax(0, 1fr); } }
+  .rotate-hint { display: none; }
+  @media (max-width: 600px) and (orientation: portrait) {
+    .rotate-hint { display: block; }
+  }
+  @media (max-width: 480px) {
+    .stepper button { font-size: .8rem; padding: 4px; white-space: nowrap; }
+  }
+  footer { margin-top: 24px; color: var(--muted); font-size: .85rem; }
+  footer a { color: var(--muted); }
 </style>
 </head>
 <body>
 <main>
-  <h1>포물선 운동 영상 분석</h1>
-  <p>현재 개발 중입니다.</p>
-  <a class="btn" href="phase0/">0단계: 프레임 이동 검증</a>
+  <header class="top">
+    <h1>포물선 운동 분석</h1>
+    <span id="fileLabel" class="muted"></span>
+  </header>
+
+  <nav class="stepper" id="stepper">
+    <button data-step="load">① 영상</button>
+    <button data-step="scale">② 기준판</button>
+    <button data-step="track">③ 공 찍기</button>
+    <button data-step="table">④ 데이터 표</button>
+  </nav>
+
+  <!-- ① 영상 선택 -->
+  <section id="panelLoad" class="card">
+    <p class="instr">분석할 영상을 고르세요</p>
+    <p class="sub">영상은 이 기기 안에서만 처리되고 어디에도 올라가지 않습니다.</p>
+    <div class="load-grid">
+      <label class="filebtn primary">영상 고르기<input id="filePick" type="file" accept="video/*"></label>
+      <label class="filebtn">바로 촬영하기<input id="fileCapture" type="file" accept="video/*" capture="environment"></label>
+      <button id="btnSample">예시 영상으로 연습</button>
+    </div>
+    <ul class="checklist">
+      <li>카메라는 <b>60fps</b>, 화면은 <b>가로</b>로 찍습니다.</li>
+      <li>영상 앞부분에 <b>기준판</b>이 공이 날아갈 자리에서 잠깐 보여야 합니다.</li>
+      <li>공이 손을 떠난 순간부터 땅에 닿을 때까지 모두 찍혀야 합니다.</li>
+    </ul>
+    <p id="loadMsg" class="muted" style="margin-top:12px"></p>
+  </section>
+
+  <!-- ②③ 작업 화면 -->
+  <section id="panelWork" class="card hidden">
+    <div class="banner rotate-hint"><b>휴대폰을 가로로 돌려 주세요.</b> 영상이 더 크게 보여 정확하게 찍을 수 있어요.</div>
+    <div id="banners"></div>
+    <div class="work-head">
+      <div class="text">
+        <p class="instr" id="instr"></p>
+        <p class="sub" id="instrSub"></p>
+      </div>
+      <div class="row" id="workActions"></div>
+    </div>
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <video id="video" playsinline muted preload="auto"></video>
+        <canvas id="overlay"></canvas>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+    <div id="navBox">
+      <div class="row nav">
+        <button data-nav="-10">−10</button>
+        <button data-nav="-1">−1</button>
+        <button data-nav="1">+1</button>
+        <button data-nav="10">+10</button>
+      </div>
+      <input id="slider" type="range" min="0" max="0" value="0" step="1" aria-label="프레임 위치">
+    </div>
+  </section>
+
+  <!-- ④ 데이터 표 -->
+  <section id="panelTable" class="card hidden">
+    <div id="tableBanners"></div>
+    <div class="table-layout">
+      <div>
+        <p class="instr">활동지 ③ 표에 그대로 옮겨 적으세요</p>
+        <p class="sub" id="tableSub"></p>
+        <div class="table-wrap" style="margin-top:10px">
+          <table class="data" id="dataTable"></table>
+        </div>
+      </div>
+      <div>
+        <div class="legend">
+          <div><span class="tag A">A</span> 던진 직후 (2번 점)</div>
+          <div><span class="tag B">B</span> 최고점 (y가 가장 큰 점)</div>
+          <div><span class="tag C">C</span> 떨어지는 중 (끝에서 두 번째 점)</div>
+        </div>
+        <p class="sub">활동지 ⑥의 에너지 계산에는 A, B, C 세 점을 씁니다.</p>
+        <p class="sub" style="margin-top:8px">값이 이상한 점이 있으면 표에서 그 줄을 눌러 다시 찍을 수 있습니다.</p>
+        <div class="row" style="margin-top:16px">
+          <button id="btnRetrack">공 다시 찍기</button>
+          <button id="btnRestart">처음부터</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <a href="board.html" target="_blank">기준판 인쇄하기</a> · <a href="phase0/">기기 검사 페이지</a>
+  </footer>
 </main>
+<canvas id="loupe" class="hidden" width="300" height="300"></canvas>
+
+<script src="lib/mp4meta.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
