@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1f6feb">
 <title>포물선 운동 분석</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
   :root {
     --bg: #f4f6f8;
@@ -93,7 +96,12 @@
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   }
   .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .stage video { object-fit: contain; }
+  .stage video { object-fit: contain; transform-origin: 0 0; }
+  .zoombar { position: absolute; right: 8px; top: 8px; display: flex; gap: 6px; align-items: center; z-index: 5; }
+  .zoombar button { min-height: 40px; min-width: 40px; padding: 0 10px; font-size: 1.1rem; background: rgba(20,24,30,.72); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+  .zoombar button:disabled { opacity: .35; }
+  .zoombar span { color: #fff; background: rgba(20,24,30,.72); border-radius: 999px; padding: 2px 10px; font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .zoombar span:empty { display: none; }
   #overlay { touch-action: none; cursor: crosshair; }
   .status { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 10px 0 6px; font-variant-numeric: tabular-nums; }
   .status .pill { background: var(--chip); border-radius: 999px; padding: 4px 12px; font-size: .92rem; }
@@ -120,6 +128,25 @@
   .tag.B { background: var(--warn); color: #fff; }
   .tag.C { background: var(--ok); color: #fff; }
   .legend { display: grid; gap: 6px; margin: 12px 0; }
+  table.data.big { font-size: 1.6rem; max-width: 760px; }
+  table.data.big th { font-size: 1.1rem; }
+  .flag { color: var(--warn); font-weight: 700; }
+  .badge { background: var(--warn); color: #fff; border-radius: 999px; padding: 2px 10px; font-size: .8rem; font-weight: 700; }
+  #classPanel { margin-top: 16px; }
+  .class-title { font-size: 1.05rem; margin: 0 0 10px; }
+  .graphs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  svg.graph { width: 100%; height: auto; background: var(--bg); border-radius: 8px; }
+  svg.graph text { font-size: 11px; fill: var(--muted); }
+  svg.graph .lab { fill: var(--text); font-weight: 600; }
+  svg.graph .axis { stroke: var(--muted); stroke-width: 1; }
+  svg.graph .grid { stroke: var(--line); stroke-width: 1; }
+  svg.graph .fit { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+  svg.graph .pt { fill: #ff3b30; }
+  .kv { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 12px 0; }
+  .kv div { background: var(--chip); border-radius: 8px; padding: 8px 10px; }
+  .kv span { display: block; color: var(--muted); font-size: .82rem; }
+  .kv b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  table.data.energy { max-width: none; font-size: .95rem; }
   .table-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
   @media (min-width: 900px) { .table-layout { grid-template-columns: minmax(0, 560px) minmax(0, 1fr); } }
   .rotate-hint { display: none; }
@@ -136,7 +163,7 @@
 <body>
 <main>
   <header class="top">
-    <h1>포물선 운동 분석</h1>
+    <div class="row"><h1>포물선 운동 분석</h1><span id="modeBadge" class="badge hidden"></span></div>
     <span id="fileLabel" class="muted"></span>
   </header>
 
@@ -179,6 +206,12 @@
       <div class="stage" id="stage">
         <video id="video" playsinline muted preload="auto"></video>
         <canvas id="overlay"></canvas>
+        <div class="zoombar">
+          <span id="zoomLabel"></span>
+          <button id="zoomOut" aria-label="축소">－</button>
+          <button id="zoomIn" aria-label="확대">＋</button>
+          <button id="zoomReset" aria-label="전체 보기">전체</button>
+        </div>
       </div>
     </div>
     <div class="status" id="status"></div>
@@ -213,11 +246,13 @@
         <p class="sub">활동지 ⑥의 에너지 계산에는 A, B, C 세 점을 씁니다.</p>
         <p class="sub" style="margin-top:8px">값이 이상한 점이 있으면 표에서 그 줄을 눌러 다시 찍을 수 있습니다.</p>
         <div class="row" style="margin-top:16px">
+          <button id="btnBig">크게 보기</button>
           <button id="btnRetrack">공 다시 찍기</button>
           <button id="btnRestart">처음부터</button>
         </div>
       </div>
     </div>
+    <div id="classPanel" class="hidden"></div>
   </section>
 
   <footer>
